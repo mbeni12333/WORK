@@ -121,20 +121,20 @@ def train(kwargs):
 	callbacks=[lr_monitor, checkpoint_callback]
 
 
-	train_dataloader = torch.utils.data.DataLoader(CamelyonDatasetMIL(root_dir="encoded_data_train_resnet18/", subset=0),
+	train_dataloader = torch.utils.data.DataLoader(CamelyonDatasetMIL(root_dir=kwargs["trainData"], subset=0),
 											batch_size=1, shuffle=True, num_workers=4)
 
-	validation_dataloader = torch.utils.data.DataLoader(CamelyonDatasetMIL(root_dir="encoded_data_test_resnet18/",subset=1),
+	validation_dataloader = torch.utils.data.DataLoader(CamelyonDatasetMIL(root_dir=kwargs["trainData"],subset=1),
 											batch_size=1, shuffle=False, num_workers=4)
 												
-	test_dataloader = torch.utils.data.DataLoader(CamelyonDatasetMIL(root_dir="encoded_data_test_resnet18/",subset=0),
+	test_dataloader = torch.utils.data.DataLoader(CamelyonDatasetMIL(root_dir=kwargs["testData"],subset=0),
 											batch_size=1, shuffle=False, num_workers=4)
 
 
 
-	model = ChowderNT(embd_size=512, loss_weight=torch.tensor(0.3))
-	logger = TensorBoardLogger(os.path.abspath("lightning_logs"), log_graph=True, default_hp_metric=False, name="CHOWDER")
-	trainer = pl.Trainer(gpus=1, max_epochs=100, auto_lr_find=True, accumulate_grad_batches=10, callbacks=callbacks, logger=logger)
+	model = ChowderNT(embd_size=kwargs["embdSize"], loss_weight=torch.tensor(kwargs["positiveWeight"]))
+	logger = TensorBoardLogger(kwargs["logdir"], log_graph=True, name=kwargs["name"])
+	trainer = pl.Trainer(gpus=1, max_epochs=kwargs["epochs"], auto_lr_find=True, accumulate_grad_batches=kwargs["accumulateGrad"], callbacks=callbacks, logger=logger)
 
 
 	trainer.fit(model, train_dataloaders=train_dataloader, 
@@ -216,6 +216,15 @@ if __name__ == "__main__":
 
 	parser.add_argument("-b", "--batchSize",
 						default=1, type=int, help="BatchSize used ")
+	
+	parser.add_argument("-m", "--model",
+						default="", type=str, help="MIL Model name")
+
+	parser.add_argument("-l", "--learningRate",
+                        default=0.01, type=float, help="Learning rate used")
+
+    parser.add_argument("-L", "--logdir",
+                        default="lightning_logs", type=str, help="Lightning log folder for tensorboard visualisation")
 
 
 	args = parser.parse_args()
